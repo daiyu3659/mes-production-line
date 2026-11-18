@@ -48,6 +48,8 @@
   .ov-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .ov-head h2{margin:0;font-size:12.5px;font-weight:650;letter-spacing:.5px;}
   .ov-head span{font-size:10.5px;color:#7d8a88;letter-spacing:.3px;}
+  .ov-toggle{display:none;}
+  .ov-mini{display:none;}
   .ov-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
   .ov-kpi{background:rgba(238,241,236,.8);border:1px solid rgba(217,222,216,.85);border-radius:11px;
     padding:8px 7px;text-align:center;}
@@ -155,8 +157,43 @@
   .spec-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;
     padding-top:14px;border-top:1px solid #eef0ea;font-size:11px;color:#8a9794;}
   @media (max-width:900px){
-    #overview{display:none;}
-    #panel{width:calc(100% - 40px);top:auto;bottom:56px;max-height:52%;}
+    #topbar{top:10px;left:10px;right:10px;flex-direction:column;align-items:stretch;gap:8px;}
+    .brand{padding:10px 13px 11px;border-radius:13px;}
+    .brand h1{font-size:14.5px;}
+    .brand p{font-size:10.5px;line-height:1.5;}
+    .tools{justify-content:flex-start;}
+    .btn{font-size:11.5px;padding:7px 11px;}
+    .demo-tag{font-size:10px;padding:6px 8px;}
+
+    /* 概览：窄屏改为底部抽屉，默认收起，仅留标题 + 一行摘要 */
+    #overview{position:fixed;left:10px;right:10px;top:auto;bottom:10px;width:auto;z-index:16;
+      padding:10px 12px;display:flex;flex-direction:column;max-height:52vh;}
+    .ov-head{margin-bottom:0;gap:8px;}
+    .ov-head h2{font-size:12px;flex:none;}
+    .ov-toggle{display:inline-flex;align-items:center;gap:5px;margin-left:auto;flex:none;
+      border:1px solid rgba(79,157,146,.42);background:rgba(79,157,146,.12);color:#3d6f68;
+      font:inherit;font-size:11.5px;letter-spacing:.3px;padding:8px 12px;border-radius:9px;cursor:pointer;}
+    .ov-toggle:active{background:rgba(79,157,146,.22);}
+    .ov-toggle .chev{font-size:9px;line-height:1;display:inline-block;transition:transform .26s ease;}
+    #overview.is-open .ov-toggle .chev{transform:rotate(180deg);}
+    .ov-mini{display:block;margin-top:8px;font-size:11px;color:#6e7b79;letter-spacing:.2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-mini b{font-weight:650;color:#2f3d3b;}
+    .ov-mini .mf{color:#b4504a;font-weight:650;}
+    .ov-body{display:none;min-height:0;}
+    #overview.is-open .ov-body{display:block;flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;margin-top:9px;padding-right:2px;}
+    #overview.is-open .ov-body::-webkit-scrollbar{width:4px;}
+    #overview.is-open .ov-body::-webkit-scrollbar-thumb{background:rgba(38,48,47,.16);border-radius:2px;}
+    #overview.is-open .ov-mini{display:none;}
+    #overview.is-open .legend{margin-bottom:2px;}
+
+    /* 工位面板：底部浮层，叠在收起后的概览条上方，互不遮挡 */
+    #panel{position:fixed;left:10px;right:10px;top:auto;width:auto;
+      bottom:calc(var(--ov-h, 64px) + 20px);
+      max-height:min(56vh, calc(100% - var(--ov-h, 64px) - 132px));
+      transform:translateY(22px);}
+    #panel.open{transform:none;}
     #hint{display:none;}
   }
 </style>
@@ -178,18 +215,27 @@
   </header>
 
   <aside id="overview">
-    <div class="ov-head"><h2>产线运行概览</h2><span id="ovClock">--:--:--</span></div>
-    <div class="ov-kpis">
-      <div class="ov-kpi"><b id="ovWip">0</b><i>线内在制（件）</i></div>
-      <div class="ov-kpi"><b id="ovYield">0%</b><i>综合良率</i></div>
-      <div class="ov-kpi"><b id="ovOut">0</b><i>今日产出（件）</i></div>
+    <div class="ov-head">
+      <h2>产线运行概览</h2>
+      <span id="ovClock">--:--:--</span>
+      <button class="ov-toggle" id="ovToggle" aria-expanded="false" aria-controls="ovBody">
+        <span id="ovToggleText">展开概览</span><span class="chev">▾</span>
+      </button>
     </div>
-    <div id="ovLines"></div>
-    <div class="legend">
-      <span><i style="background:#5cb89f"></i>运行</span>
-      <span><i style="background:#d9a13b"></i>待机 · 琥珀安灯</span>
-      <span><i style="background:#c9605a"></i>故障 · 红灯脉冲</span>
-      <span><i style="background:#7d9ac0"></i>保养 · 蓝色安灯</span>
+    <div class="ov-mini" id="ovMini">在制 — · 良率 —</div>
+    <div class="ov-body" id="ovBody">
+      <div class="ov-kpis">
+        <div class="ov-kpi"><b id="ovWip">0</b><i>线内在制（件）</i></div>
+        <div class="ov-kpi"><b id="ovYield">0%</b><i>综合良率</i></div>
+        <div class="ov-kpi"><b id="ovOut">0</b><i>今日产出（件）</i></div>
+      </div>
+      <div id="ovLines"></div>
+      <div class="legend">
+        <span><i style="background:#5cb89f"></i>运行</span>
+        <span><i style="background:#d9a13b"></i>待机 · 琥珀安灯</span>
+        <span><i style="background:#c9605a"></i>故障 · 红灯脉冲</span>
+        <span><i style="background:#7d9ac0"></i>保养 · 蓝色安灯</span>
+      </div>
     </div>
   </aside>
 
@@ -1758,6 +1804,9 @@ function selectStation(id){
   rec.ring.material.opacity = 0.9;
   renderPanel(rec.st);
   panelEl.classList.add('open');
+  if(narrowMQ.matches){
+    setOverviewOpen(false);   // 窄屏：打开工位面板时收起概览，只保留底部摘要条
+  }
 }
 
 function closePanel(){
@@ -1771,6 +1820,48 @@ function closePanel(){
 }
 
 document.getElementById('pClose').addEventListener('click', closePanel);
+
+/* ---------- 窄屏概览抽屉 ---------- */
+const overviewEl = document.getElementById('overview');
+const ovToggleEl = document.getElementById('ovToggle');
+const ovToggleTextEl = document.getElementById('ovToggleText');
+const ovMiniEl = document.getElementById('ovMini');
+const narrowMQ = window.matchMedia('(max-width:900px)');
+
+/* 把概览实际高度写进 CSS 变量，供工位面板计算底部偏移 */
+function syncOvHeight(){
+  if(narrowMQ.matches){
+    document.documentElement.style.setProperty('--ov-h', overviewEl.offsetHeight + 'px');
+  } else {
+    document.documentElement.style.removeProperty('--ov-h');
+  }
+}
+
+function setOverviewOpen(open){
+  if(!narrowMQ.matches){
+    overviewEl.classList.remove('is-open');
+    ovToggleEl.setAttribute('aria-expanded', 'false');
+    ovToggleTextEl.textContent = '展开概览';
+    return;
+  }
+  if(open) closePanel();           // 与工位面板互斥，避免互相遮挡
+  overviewEl.classList.toggle('is-open', open);
+  ovToggleEl.setAttribute('aria-expanded', String(open));
+  ovToggleTextEl.textContent = open ? '收起概览' : '展开概览';
+  requestAnimationFrame(syncOvHeight);
+}
+
+ovToggleEl.addEventListener('click', () => {
+  setOverviewOpen(!overviewEl.classList.contains('is-open'));
+});
+window.addEventListener('resize', syncOvHeight);
+if(narrowMQ.addEventListener){
+  narrowMQ.addEventListener('change', () => {
+    if(!narrowMQ.matches) setOverviewOpen(false);
+    syncOvHeight();
+  });
+}
+syncOvHeight();
 
 /* ---------- 概览 ---------- */
 const OV_LINES = LINES.map(l => ({ id: l.id, name: l.name, color: l.color }))
@@ -1814,6 +1905,7 @@ function lineStats(lineId, sts){
 
 function updateOverview(){
   let totalWip = 0, totalGood = 0, totalBad = 0, totalOut = 0;
+  const faultNames = [];
 
   OV_LINES.forEach(l => {
     const sts = STATIONS.filter(s => s.lineId === l.id);
@@ -1837,11 +1929,19 @@ function updateOverview(){
     totalGood += sts.reduce((s, x) => s + x.good, 0);
     totalBad += sts.reduce((s, x) => s + x.bad, 0);
     totalOut += done;
+    if(stat.color === '#c9605a') faultNames.push(l.name);
   });
 
+  const totalYield = ((totalGood / Math.max(1, totalGood + totalBad)) * 100).toFixed(1) + '%';
   document.getElementById('ovWip').textContent = nf(totalWip);
-  document.getElementById('ovYield').textContent = ((totalGood / Math.max(1, totalGood + totalBad)) * 100).toFixed(1) + '%';
+  document.getElementById('ovYield').textContent = totalYield;
   document.getElementById('ovOut').textContent = nf(totalOut);
+
+  /* 窄屏收起时的一行摘要 */
+  ovMiniEl.innerHTML = `<b>在制 ${nf(totalWip)}</b> · 良率 ${totalYield}`
+    + (faultNames.length
+        ? ` · <span class="mf">${faultNames.join('、')} 故障停机</span>`
+        : ' · <span style="color:#4f9d92">全线运行</span>');
 }
 
 function updateClock(){
