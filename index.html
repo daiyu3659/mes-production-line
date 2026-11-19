@@ -17,7 +17,7 @@
     --shadow:0 10px 30px rgba(38,48,47,.12), 0 2px 6px rgba(38,48,47,.06);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;margin:0;overflow:hidden;background:#e9ebe5;color:var(--ink);
+  html,body{height:100%;margin:0;overflow:hidden;background:#e9eaeb;color:var(--ink);
     font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;}
   canvas{display:block;outline:none;}
   #app{position:fixed;inset:0;}
@@ -310,11 +310,20 @@ const STATUS = {
 
 const XS = [-12.2, -6.6, -1.0, 4.6, 10.2];      // 工位横向坐标
 const FAULT_JAM_OFFSET = 2.4;                    // 故障截停线位于工位上游的距离
+/* 产线识别色：只做低饱和点缀（顶边条 / 地面导引带 / 工件箱色带），不用于机身 */
 const LANE = {
-  pcbm:    { z:-7.2, color:0x63a79c, light:0x9fd0c7 },
-  bms:     { z: 0,   color:0x8298bb, light:0xb6c6dd },
-  battery: { z: 7.2, color:0xd7ab61, light:0xe8cd9e },
-  repair:  { z:14.6, color:0xb4909a, light:0xdcc3c9 }
+  pcbm:    { z:-7.2, color:0x7f93a8, light:0xaebdcb },   // 冷灰蓝
+  bms:     { z: 0,   color:0x939795, light:0xc2c5c2 },   // 中性灰
+  battery: { z: 7.2, color:0xb3a48b, light:0xd8ccb9 },   // 暖沙
+  repair:  { z:14.6, color:0x9e9c95, light:0xcfccc3 }    // 维修区：中性石灰
+};
+
+/* 机身三档中性色：冷白 / 浅灰 / 暖米灰，靠明度与粗糙度区分质感 */
+const BODY_TONE = {
+  pcbm:    0xdfe3e8,
+  bms:     0xd8dbe0,
+  battery: 0xddd9d2,
+  repair:  0xd9dcdb
 };
 
 const LINES = [
@@ -482,9 +491,9 @@ const skyTex = (() => {
   const c = makeCanvas(4, 256);
   const ctx = c.getContext('2d');
   const grd = ctx.createLinearGradient(0, 0, 0, 256);
-  grd.addColorStop(0, '#f6f8f3');
-  grd.addColorStop(0.55, '#eef1ea');
-  grd.addColorStop(1, '#e9ebe5');
+  grd.addColorStop(0, '#f7f8f8');
+  grd.addColorStop(0.55, '#eeefef');
+  grd.addColorStop(1, '#e9eaeb');
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, 4, 256);
   const t = new THREE.CanvasTexture(c);
@@ -492,7 +501,7 @@ const skyTex = (() => {
   return t;
 })();
 scene.background = skyTex;
-scene.fog = new THREE.Fog(0xe9ebe5, 70, 158);
+scene.fog = new THREE.Fog(0xe9eaeb, 70, 158);
 
 const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 320);
 
@@ -523,25 +532,25 @@ rim.position.set(0, 10, 34);
 scene.add(rim);
 
 /* ---------- 材质 ---------- */
+/* 中性工业材料：金属 / 塑料 / 橡胶靠粗糙度与明度区分，不使用色相 */
 const MAT = {
-  floor:  new THREE.MeshStandardMaterial({ color: 0xc9cdc2, roughness: 0.98, metalness: 0.0 }),
-  wall:   new THREE.MeshStandardMaterial({ color: 0xdcdfd5, roughness: 0.96, metalness: 0.0 }),
-  wallLow:new THREE.MeshStandardMaterial({ color: 0xd2d5cb, roughness: 0.96, metalness: 0.0 }),
-  steel:  new THREE.MeshStandardMaterial({ color: 0x8d9997, roughness: 0.55, metalness: 0.28 }),
-  steelDark: new THREE.MeshStandardMaterial({ color: 0x606c6b, roughness: 0.5, metalness: 0.3 }),
-  paint:  new THREE.MeshStandardMaterial({ color: 0xc4cdca, roughness: 0.82, metalness: 0.05 }),
-  paintDeep: new THREE.MeshStandardMaterial({ color: 0xa4b0ad, roughness: 0.8, metalness: 0.06 }),
-  rubber: new THREE.MeshStandardMaterial({ color: 0x454f4e, roughness: 0.95 }),
-  amber:  new THREE.MeshStandardMaterial({ color: 0xd9a13b, roughness: 0.7 }),
-  green:  new THREE.MeshStandardMaterial({ color: 0x4f9d92, roughness: 0.72 }),
+  floor:  new THREE.MeshStandardMaterial({ color: 0xc8cbcd, roughness: 0.98, metalness: 0.0 }),
+  wall:   new THREE.MeshStandardMaterial({ color: 0xdcdee0, roughness: 0.96, metalness: 0.0 }),
+  wallLow:new THREE.MeshStandardMaterial({ color: 0xd3d5d6, roughness: 0.96, metalness: 0.0 }),
+  steel:  new THREE.MeshStandardMaterial({ color: 0x929899, roughness: 0.5, metalness: 0.34 }),
+  steelDark: new THREE.MeshStandardMaterial({ color: 0x5f6465, roughness: 0.46, metalness: 0.36 }),
+  paint:  new THREE.MeshStandardMaterial({ color: 0xc3c7c9, roughness: 0.82, metalness: 0.05 }),
+  paintDeep: new THREE.MeshStandardMaterial({ color: 0xa6acae, roughness: 0.8, metalness: 0.06 }),
+  rubber: new THREE.MeshStandardMaterial({ color: 0x44494b, roughness: 0.96 }),
+  green:  new THREE.MeshStandardMaterial({ color: 0x5cb89f, roughness: 0.72 }),
   red:    new THREE.MeshStandardMaterial({ color: 0xc9605a, roughness: 0.75 }),
-  glass:  new THREE.MeshStandardMaterial({ color: 0x38484a, roughness: 0.25, metalness: 0.4,
-            emissive: 0x24363a, emissiveIntensity: 0.55 }),
-  screen: new THREE.MeshStandardMaterial({ color: 0x243233, roughness: 0.35, metalness: 0.2,
-            emissive: 0x4f9d92, emissiveIntensity: 0.6 }),
-  wood:   new THREE.MeshStandardMaterial({ color: 0xb79a78, roughness: 0.9 }),
-  crate:  new THREE.MeshStandardMaterial({ color: 0xc6ab81, roughness: 0.92 }),
-  crate2: new THREE.MeshStandardMaterial({ color: 0xb5a184, roughness: 0.92 })
+  glass:  new THREE.MeshStandardMaterial({ color: 0x3a4447, roughness: 0.22, metalness: 0.42,
+            emissive: 0x26363a, emissiveIntensity: 0.5 }),
+  screen: new THREE.MeshStandardMaterial({ color: 0x24292b, roughness: 0.35, metalness: 0.2,
+            emissive: 0x8fa9a4, emissiveIntensity: 0.5 }),
+  wood:   new THREE.MeshStandardMaterial({ color: 0xb3a58f, roughness: 0.9 }),
+  crate:  new THREE.MeshStandardMaterial({ color: 0xc3b294, roughness: 0.92 }),
+  crate2: new THREE.MeshStandardMaterial({ color: 0xb4a78f, roughness: 0.92 })
 };
 
 /* ---------- 通用几何小工具 ---------- */
@@ -746,9 +755,9 @@ scene.add(envGroup);
   // 敞开式地坪：260×260 大平面，中心带浅网格，边缘径向渐隐到背景色
   const gCv = makeCanvas(1024, 1024);
   const gctx = gCv.getContext('2d');
-  gctx.fillStyle = '#c9cdc2';
+  gctx.fillStyle = '#c8cbcd';
   gctx.fillRect(0, 0, 1024, 1024);
-  gctx.strokeStyle = 'rgba(173,181,170,.38)';
+  gctx.strokeStyle = 'rgba(176,181,183,.38)';
   gctx.lineWidth = 3;
   for(let i = 0; i <= 32; i++){
     const p = i * 32;
@@ -756,9 +765,9 @@ scene.add(envGroup);
     gctx.beginPath(); gctx.moveTo(0, p); gctx.lineTo(1024, p); gctx.stroke();
   }
   const fade = gctx.createRadialGradient(512, 512, 120, 512, 512, 508);
-  fade.addColorStop(0, 'rgba(233,235,229,0)');
-  fade.addColorStop(0.55, 'rgba(233,235,229,.18)');
-  fade.addColorStop(1, 'rgba(233,235,229,.98)');
+  fade.addColorStop(0, 'rgba(233,234,235,0)');
+  fade.addColorStop(0.55, 'rgba(233,234,235,.18)');
+  fade.addColorStop(1, 'rgba(233,234,235,.98)');
   gctx.fillStyle = fade;
   gctx.fillRect(0, 0, 1024, 1024);
 
@@ -773,8 +782,8 @@ scene.add(envGroup);
   floor.receiveShadow = true;
   envGroup.add(floor);
 
-  // 地面安全通道线
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xd9a13b, transparent: true, opacity: 0.5 });
+  // 地面安全通道线（中性灰，不占用状态色与产线色）
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xb7b4ab, transparent: true, opacity: 0.5 });
   function floorLine(x, z, w, d){
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lineMat);
     m.rotation.x = -Math.PI / 2;
@@ -786,8 +795,19 @@ scene.add(envGroup);
   floorLine(-16.4, -0.4, 0.16, 23.9);
   floorLine(16.4, -0.4, 0.16, 23.9);
 
+  // 产线地面导引带：0.14 宽的窄条，低饱和，用于整条线识别
+  LINES.forEach(l => {
+    const gm = new THREE.MeshBasicMaterial({ color: l.color, transparent: true, opacity: 0.72 });
+    [-1, 1].forEach(s => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(28.8, 0.22), gm);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(-1.2, 0.025, l.z + s * 2.45);
+      envGroup.add(m);
+    });
+  });
+
   // 分区地贴
-  const zl = labelTexture('生产区', { fontSize: 44, color: 'rgba(90,104,101,.5)', bg: 'rgba(255,255,255,0)', weight: 600 });
+  const zl = labelTexture('生产区', { fontSize: 44, color: 'rgba(96,100,102,.5)', bg: 'rgba(255,255,255,0)', weight: 600 });
   const zone = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2 / zl.aspect),
     new THREE.MeshBasicMaterial({ map: zl.texture, transparent: true, depthWrite: false }));
   zone.rotation.x = -Math.PI / 2;
@@ -809,13 +829,14 @@ function stationShell(st, opt){
   const g = new THREE.Group();
   g.position.set(st.x, 0, st.z);
 
-  const accentMat = new THREE.MeshStandardMaterial({ color: st.color, roughness: 0.68, metalness: 0.05 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: st.color, roughness: 0.62, metalness: 0.08 });
+  // 机身：中性色，不随产线染色；产线色只出现在顶边条等点缀件上
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(st.color).lerp(new THREE.Color(0xf2f4ee), 0.62),
-    roughness: 0.8, metalness: 0.08
+    color: BODY_TONE[st.lineId] || 0xd8dbe0,
+    roughness: 0.82, metalness: 0.06
   });
-  const bodyDeep = new THREE.MeshStandardMaterial({ color: 0x9daaa6, roughness: 0.82, metalness: 0.1 });
-  const padMat = new THREE.MeshStandardMaterial({ color: 0xaab2a8, roughness: 0.94, metalness: 0.02 });
+  const bodyDeep = new THREE.MeshStandardMaterial({ color: 0x9ba1a3, roughness: 0.86, metalness: 0.12 });
+  const padMat = new THREE.MeshStandardMaterial({ color: 0xa9adaa, roughness: 0.96, metalness: 0.02 });
 
   g.add(box(3.6, 0.16, 2.7, padMat, 0, 0.08, 0));
   g.add(box(3.2, 0.08, 2.35, MAT.paintDeep, 0, 0.19, 0));
@@ -831,9 +852,18 @@ function stationShell(st, opt){
   if(hoodH > 0){
     hood = box(3.05, hoodH, 2.05, bodyMat, 0, hoodBottom + 0.05 + hoodH / 2, 0);
     g.add(hood);
-    g.add(box(3.2, 0.2, 2.2, accentMat, 0, hoodBottom + hoodH + 0.15, 0));
+    // 顶盖保持中性，仅在四边压一条 0.14 宽的产线识别条
+    g.add(box(3.2, 0.18, 2.2, bodyDeep, 0, hoodBottom + hoodH + 0.12, 0));
+    // 顶盖前缘压一条 0.14 高的窄色带，默认俯视视角下也能认线
+    g.add(box(3.06, 0.14, 0.06, accentMat, 0, hoodBottom + hoodH + 0.13, 1.075));
+    const bandY = hoodBottom + hoodH + 0.25;
+    g.add(box(3.24, 0.1, 0.18, accentMat, 0, bandY, 1.04));
+    g.add(box(3.24, 0.1, 0.18, accentMat, 0, bandY, -1.04));
+    g.add(box(0.18, 0.1, 2.16, accentMat, 1.55, bandY, 0));
+    g.add(box(0.18, 0.1, 2.16, accentMat, -1.55, bandY, 0));
     g.add(box(3.16, 0.06, 2.16, MAT.steelDark, 0, hoodBottom + hoodH + 0.03, 0, false));
-    g.add(box(3.05, 0.05, 1.9, MAT.steelDark, 0, hoodBottom + 0.04, 0, false));
+    // 隐藏内衬：四周内缩 5cm 以上，避免侧面与罩体侧面共面导致 z-fighting
+    g.add(box(2.94, 0.05, 1.80, MAT.steelDark, 0, hoodBottom + 0.04, 0, false));
     // 前面板窗口
     g.add(box(1.25, 0.5, 0.05, MAT.glass, -0.72, hoodBottom + 0.05 + hoodH / 2, 1.04));
     g.add(box(0.5, 0.26, 0.04, MAT.screen, 0.92, hoodBottom + 0.05 + hoodH / 2 + 0.05, 1.05));
@@ -867,7 +897,7 @@ function stationShell(st, opt){
 
 function addRing(g, st){
   const mat = new THREE.MeshBasicMaterial({
-    color: 0x4f9d92, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false
+    color: 0x46514f, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false
   });
   const ring = new THREE.Mesh(new THREE.RingGeometry(1.74, 1.94, 56), mat);
   ring.rotation.x = -Math.PI / 2;
@@ -906,14 +936,15 @@ function addStatusFX(g, st, built){
   g.add(cyl(0.13, 0.15, 0.15, 12, MAT.steelDark, px, 3.38, pz));
 
   // 灯罩 + 发光球（不做色调映射，保证红色高饱和）
-  const beaconMat = new THREE.MeshBasicMaterial({ color: col, toneMapped: false });
+  const beaconCol = isFault ? 0xd94f47 : col;
+  const beaconMat = new THREE.MeshBasicMaterial({ color: beaconCol, toneMapped: false });
   const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.26, 18, 14), beaconMat);
   beacon.position.set(px, 3.66, pz);
   g.add(beacon);
   g.add(cyl(0.1, 0.12, 0.09, 10, MAT.steelDark, px, 3.94, pz));
 
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: GLOW_TEX, color: col, transparent: true, depthWrite: false,
+    map: GLOW_TEX, color: beaconCol, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, toneMapped: false
   }));
   halo.position.set(px, 3.66, pz);
@@ -983,10 +1014,10 @@ function addStatusFX(g, st, built){
       // 低频低幅度呼吸：约 4.5 秒一个周期，只做轻微明暗变化，避免频闪刺眼
       const breathe = 0.5 + 0.5 * Math.sin(time * 1.4 + t0);
       beaconMat.color.copy(beaconDark).lerp(beaconLit, 0.55 + breathe * 0.45);
-      halo.material.opacity = 0.1 + breathe * 0.12;
-      ringMat.opacity = 0.24 + breathe * 0.16;
-      borderMat.opacity = 0.18 + breathe * 0.14;
-      redLight.intensity = 0.12 + breathe * 0.18;
+      halo.material.opacity = 0.12 + breathe * 0.13;
+      ringMat.opacity = 0.27 + breathe * 0.18;
+      borderMat.opacity = 0.2 + breathe * 0.16;
+      redLight.intensity = 0.13 + breathe * 0.19;
       if(built && built.accentMat) built.accentMat.emissiveIntensity = 0.12 + breathe * 0.16;
     } else {
       const speed = isMaint ? 1.2 : 0.9;
@@ -1012,7 +1043,7 @@ function addLineBlockFX(st){
   scene.add(bar);
 
   animators.push((time) => {
-    barMat.opacity = 0.26 + 0.16 * (0.5 + 0.5 * Math.sin(time * 1.3 + st.phase));
+    barMat.opacity = 0.3 + 0.17 * (0.5 + 0.5 * Math.sin(time * 1.3 + st.phase));
   });
 }
 
@@ -1039,7 +1070,7 @@ function buildFeeder(st){
     c.rotation.y = (i - 1) * 0.12;
     g.add(c);
   }
-  g.add(box(0.06, 0.14, 0.02, MAT.amber, 1.35, 1.02, 1.12, false));
+  g.add(box(0.06, 0.14, 0.02, MAT.steel, 1.35, 1.02, 1.12, false));
 
   animators.push((time) => {
     const k = (Math.sin(time * 2.2 + st.phase) + 1) / 2;
@@ -1096,7 +1127,7 @@ function buildInspect(st){
 
   // 采集光斑
   const spotMat = new THREE.MeshBasicMaterial({
-    color: 0x9fe3d8, transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide
+    color: 0xd5e4df, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide
   });
   const spot = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), spotMat);
   spot.rotation.x = -Math.PI / 2;
@@ -1105,11 +1136,11 @@ function buildInspect(st){
 
   // 检测屏幕
   const scrMat = new THREE.MeshStandardMaterial({
-    color: 0x23302f, emissive: 0x4f9d92, emissiveIntensity: 0.55, roughness: 0.3
+    color: 0x242a2b, emissive: 0x93aaa6, emissiveIntensity: 0.5, roughness: 0.3
   });
   const scr = box(0.62, 0.42, 0.05, scrMat, -0.95, 1.92, 1.06, false);
   g.add(scr);
-  const scanBar = box(0.56, 0.035, 0.02, new THREE.MeshBasicMaterial({ color: 0xbff0e6 }), -0.95, 1.75, 1.09, false);
+  const scanBar = box(0.56, 0.035, 0.02, new THREE.MeshBasicMaterial({ color: 0xdbe7e3 }), -0.95, 1.75, 1.09, false);
   g.add(scanBar);
 
   animators.push((time) => {
@@ -1133,7 +1164,7 @@ function buildScan(st){
   const scanHead = box(0.3, 0.2, 0.42, MAT.steelDark, 1.1, 1.55, -0.72);
   g.add(scanHead);
   const beamMat = new THREE.MeshBasicMaterial({
-    color: 0xd9574f, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide
+    color: 0xc9dade, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide
   });
   const beam = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.05), beamMat);
   beam.rotation.x = -Math.PI / 2;
@@ -1150,7 +1181,7 @@ function buildScan(st){
     bin.add(box(0.64, 0.06, 0.46, MAT.rubber, 0, 0.42, 0));
     bin.position.set(x, 0, z + 0.62);
     g.add(bin);
-    const tag = makeSprite(label, { fontSize: 38, color: '#ffffff', bg: label === '良品口' ? '#4f9d92' : '#c9605a', height: 0.4 });
+    const tag = makeSprite(label, { fontSize: 38, color: '#ffffff', bg: label === '良品口' ? '#5cb89f' : '#c9605a', height: 0.4 });
     tag.position.set(x, 0.86, z + 0.66);
     g.add(tag);
     return bin;
@@ -1171,7 +1202,7 @@ function buildOutput(st){
   const s = stationShell(st, { hoodH: 0.5, hoodBottom: 1.66 });
   const g = s.g;
 
-  const rollerMat = new THREE.MeshStandardMaterial({ color: 0x9ca7a5, roughness: 0.45, metalness: 0.35 });
+  const rollerMat = new THREE.MeshStandardMaterial({ color: 0x9ba1a2, roughness: 0.45, metalness: 0.35 });
   const rollers = [];
   for(let i = 0; i < 4; i++){
     const r = cyl(0.09, 0.09, 1.5, 12, rollerMat, -1.1 + i * 0.72, 0.8, 0);
@@ -1244,19 +1275,19 @@ function buildRepair(st){
 
   // 显示器
   g.add(box(0.85, 0.55, 0.06, MAT.steelDark, -0.7, 1.45, -0.42));
-  const scrMat = new THREE.MeshStandardMaterial({ color: 0x22302f, emissive: 0x63b3a6, emissiveIntensity: 0.6, roughness: 0.35 });
+  const scrMat = new THREE.MeshStandardMaterial({ color: 0x232829, emissive: 0x93aaa6, emissiveIntensity: 0.55, roughness: 0.35 });
   g.add(box(0.75, 0.45, 0.03, scrMat, -0.7, 1.45, -0.38, false));
   g.add(box(0.08, 0.34, 0.08, MAT.steelDark, -0.7, 1.12, -0.42));
 
   // 维修中的板卡与工具
   const board = box(0.5, 0.04, 0.36, MAT.green, 0.35, 1.06, 0.15);
   g.add(board);
-  g.add(box(0.2, 0.06, 0.1, MAT.amber, 0.95, 1.06, -0.05));
-  g.add(cyl(0.06, 0.09, 0.16, 8, MAT.red, 1.25, 1.1, 0.3));
+  g.add(box(0.2, 0.06, 0.1, MAT.steel, 0.95, 1.06, -0.05));
+  g.add(cyl(0.06, 0.09, 0.16, 8, MAT.steel, 1.25, 1.1, 0.3));
 
   // 台灯
   g.add(cyl(0.05, 0.06, 1.0, 8, MAT.steelDark, -1.3, 1.55, 0.55));
-  const shade = cyl(0.16, 0.28, 0.24, 10, MAT.amber, -1.3, 2.0, 0.55);
+  const shade = cyl(0.16, 0.28, 0.24, 10, MAT.paintDeep, -1.3, 2.0, 0.55);
   g.add(shade);
   const lightMat = new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe6b0, emissiveIntensity: 0.9, roughness: 0.4 });
   g.add(cyl(0.16, 0.16, 0.04, 10, lightMat, -1.3, 1.89, 0.55));
@@ -1265,7 +1296,7 @@ function buildRepair(st){
   g.add(cyl(0.26, 0.26, 0.08, 10, MAT.paintDeep, 0, 0.62, 1.25));
   g.add(cyl(0.05, 0.05, 0.6, 8, MAT.steelDark, 0, 0.31, 1.25));
 
-  const tag = makeSprite('维修返测区', { fontSize: 42, color: '#ffffff', bg: '#8c6f78', height: 0.5 });
+  const tag = makeSprite('维修返测区', { fontSize: 42, color: '#ffffff', bg: '#85857f', height: 0.5 });
   tag.position.set(0, 2.55, -0.4);
   g.add(tag);
 
@@ -1300,12 +1331,12 @@ function buildRetest(st){
   const arm = new THREE.Group();
   arm.add(box(0.1, 0.9, 0.1, MAT.steel, 0, 0.45, 0));
   arm.add(box(0.5, 0.08, 0.1, MAT.steel, 0.2, 0.9, 0));
-  arm.add(cyl(0.03, 0.05, 0.18, 8, MAT.amber, 0.42, 0.8, 0));
+  arm.add(cyl(0.03, 0.05, 0.18, 8, MAT.steel, 0.42, 0.8, 0));
   arm.position.set(-0.4, 1.24, -0.1);
   g.add(arm);
 
   // 结果屏
-  const scrMat = new THREE.MeshStandardMaterial({ color: 0x22302f, emissive: 0x7d9ac0, emissiveIntensity: 0.6, roughness: 0.32 });
+  const scrMat = new THREE.MeshStandardMaterial({ color: 0x232829, emissive: 0x9aaebb, emissiveIntensity: 0.55, roughness: 0.32 });
   g.add(box(0.75, 0.5, 0.06, MAT.steelDark, 0.75, 1.5, -0.5));
   g.add(box(0.64, 0.4, 0.03, scrMat, 0.75, 1.5, -0.46, false));
   g.add(box(0.07, 0.4, 0.07, MAT.steelDark, 0.75, 1.05, -0.5));
@@ -1313,7 +1344,7 @@ function buildRetest(st){
   const okMat = new THREE.MeshStandardMaterial({ color: 0x5cb89f, emissive: 0x5cb89f, emissiveIntensity: 0.9, roughness: 0.4 });
   g.add(cyl(0.08, 0.08, 0.06, 10, okMat, -1.05, 1.28, 0.55));
 
-  const tag = makeSprite('返测复判', { fontSize: 40, color: '#ffffff', bg: '#7d9ac0', height: 0.44 });
+  const tag = makeSprite('返测复判', { fontSize: 40, color: '#ffffff', bg: '#85857f', height: 0.44 });
   tag.position.set(0.75, 1.95, -0.3);
   g.add(tag);
 
@@ -1386,13 +1417,13 @@ function buildConveyor(line){
   // 产线地坪带，强化单条线的整体感
   const strip = new THREE.Mesh(
     new THREE.PlaneGeometry(length + 2.4, 4.7),
-    new THREE.MeshBasicMaterial({ color: 0xc2c7bb, transparent: true, opacity: 0.8 })
+    new THREE.MeshBasicMaterial({ color: 0xc5c8c9, transparent: true, opacity: 0.8 })
   );
   strip.rotation.x = -Math.PI / 2;
   strip.position.set(cx, 0.016, 0);
   g.add(strip);
 
-  const edgeMat = new THREE.MeshBasicMaterial({ color: line.color, transparent: true, opacity: 0.32 });
+  const edgeMat = new THREE.MeshBasicMaterial({ color: line.color, transparent: true, opacity: 0.5 });
   [2.32, -2.32].forEach(dz => {
     const e = new THREE.Mesh(new THREE.PlaneGeometry(length + 2.4, 0.1), edgeMat);
     e.rotation.x = -Math.PI / 2;
@@ -1431,16 +1462,17 @@ function buildItems(line, rec){
   const pool = [];
   const count = 8;
   const span = (BELT.end - BELT.start) / count;
-  const baseColor = new THREE.Color(line.color).lerp(new THREE.Color(0xeff2ec), 0.4);
+  // 工件箱本体中性，产线色只保留为顶部窄色带
+  const baseColor = new THREE.Color(0xd8dad9).lerp(new THREE.Color(0xe6e7e5), (hashSeed(line.id) % 7) / 24);
 
   for(let i = 0; i < count; i++){
     const grp = new THREE.Group();
-    const bodyMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.72, metalness: 0.08 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.78, metalness: 0.05 });
     const b = new THREE.Mesh(ITEM_GEO, bodyMat);
     b.castShadow = true; b.receiveShadow = true;
     grp.add(b);
 
-    const capMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(line.color).lerp(new THREE.Color(0xffffff), 0.2), roughness: 0.6 });
+    const capMat = new THREE.MeshStandardMaterial({ color: line.color, roughness: 0.6, metalness: 0.04 });
     const cap = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.32), capMat);
     cap.position.y = 0.17;
     grp.add(cap);
@@ -1473,14 +1505,14 @@ LINES.forEach(line => {
 
 // 维修返测区地坪
 (function repairArea(){
-  const padMat = new THREE.MeshStandardMaterial({ color: 0xc6cabf, roughness: 0.96 });
+  const padMat = new THREE.MeshStandardMaterial({ color: 0xc7c9c8, roughness: 0.96 });
   const pad = new THREE.Mesh(new THREE.PlaneGeometry(14.6, 5.4), padMat);
   pad.rotation.x = -Math.PI / 2;
   pad.position.set(6.2, 0.018, 14.6);
   pad.receiveShadow = true;
   scene.add(pad);
 
-  const edgeMat = new THREE.MeshBasicMaterial({ color: 0xb4909a, transparent: true, opacity: 0.55 });
+  const edgeMat = new THREE.MeshBasicMaterial({ color: LANE.repair.color, transparent: true, opacity: 0.55 });
   [[6.2, 11.95, 14.6, 0.12], [6.2, 17.25, 14.6, 0.12], [-1.05, 14.6, 0.12, 5.4], [13.45, 14.6, 0.12, 5.4]]
     .forEach(e => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(e[2], e[3]), edgeMat);
@@ -1490,7 +1522,7 @@ LINES.forEach(line => {
     });
 
   // 从三条线汇入的流向虚线
-  const dashMat = new THREE.MeshBasicMaterial({ color: 0xb4909a, transparent: true, opacity: 0.35 });
+  const dashMat = new THREE.MeshBasicMaterial({ color: LANE.repair.color, transparent: true, opacity: 0.42 });
   for(let z = 9.4; z < 12.2; z += 0.9){
     const d = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.5), dashMat);
     d.rotation.x = -Math.PI / 2;
@@ -1512,9 +1544,9 @@ function addLaneLabel(text, x, y, z, color){
   scene.add(sp);
   return sp;
 }
-addLaneLabel('PCBM 流水线', -6.5, 3.55, LANE.pcbm.z, '#3f7c73');
-addLaneLabel('BMS 流水线', -6.5, 3.55, LANE.bms.z, '#526c93');
-addLaneLabel('电池流水线', -6.5, 3.55, LANE.battery.z, '#96712f');
+addLaneLabel('PCBM 流水线', -6.5, 3.55, LANE.pcbm.z, '#5c6f84');
+addLaneLabel('BMS 流水线', -6.5, 3.55, LANE.bms.z, '#6b6f6d');
+addLaneLabel('电池流水线', -6.5, 3.55, LANE.battery.z, '#8a7c64');
 
 /* =========================================================
    镜头控制（自建轨道控制：旋转 / 缩放 / 平移 / 复位）
@@ -1575,7 +1607,7 @@ function setHover(rec){
   if(hoveredObj === rec) return;
   if(hoveredObj){
     hoveredObj.ring.material.opacity = hoveredObj === selectedRec ? 0.85 : 0;
-    hoveredObj.ring.material.color.setHex(0x4f9d92);
+    hoveredObj.ring.material.color.setHex(0x46514f);
     if(hoveredObj.accentMat){
       hoveredObj.accentMat.emissive.setHex(0x000000);
       hoveredObj.accentMat.emissiveIntensity = 0;
@@ -1584,7 +1616,7 @@ function setHover(rec){
   hoveredObj = rec;
   if(rec){
     rec.ring.material.opacity = 0.55;
-    rec.ring.material.color.setHex(0xd9a13b);
+    rec.ring.material.color.setHex(0x7c8784);
     if(rec.accentMat){
       rec.accentMat.emissive.setHex(0xffffff);
       rec.accentMat.emissiveIntensity = 0.18;
@@ -1795,12 +1827,12 @@ function selectStation(id){
   const rec = stationObjects.find(o => o.st.id === id);
   if(!rec) return;
   if(selectedRec && selectedRec !== rec){
-    selectedRec.ring.material.color.setHex(selectedRec === hoveredObj ? 0xd9a13b : 0x4f9d92);
+    selectedRec.ring.material.color.setHex(selectedRec === hoveredObj ? 0x7c8784 : 0x46514f);
     selectedRec.ring.material.opacity = selectedRec === hoveredObj ? 0.55 : 0;
   }
   selectedRec = rec;
   selectedSt = rec.st;
-  rec.ring.material.color.setHex(0x4f9d92);
+  rec.ring.material.color.setHex(0x46514f);
   rec.ring.material.opacity = 0.9;
   renderPanel(rec.st);
   panelEl.classList.add('open');
@@ -1813,7 +1845,7 @@ function closePanel(){
   panelEl.classList.remove('open');
   if(selectedRec && selectedRec !== hoveredObj){
     selectedRec.ring.material.opacity = 0;
-    selectedRec.ring.material.color.setHex(0x4f9d92);
+    selectedRec.ring.material.color.setHex(0x46514f);
   }
   selectedRec = null;
   selectedSt = null;
@@ -2069,7 +2101,7 @@ function loop(){
 
   if(selectedRec){
     selectedRec.ring.material.opacity = 0.55 + 0.35 * (0.5 + 0.5 * Math.sin(elapsed * 2.6));
-    selectedRec.ring.material.color.setHex(0x4f9d92);
+    selectedRec.ring.material.color.setHex(0x46514f);
   }
 
   renderer.render(scene, camera);
